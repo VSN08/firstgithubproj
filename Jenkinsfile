@@ -10,7 +10,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout the repository from Git
-                git 'https://github.com/VSN08/firstgithubproj.git' // Replace with your repo URL
+                git url : 'https://github.com/VSN08/firstgithubproj.git' ,  git branch: 'main' // Replace with your repo URL
             }
         }
 
