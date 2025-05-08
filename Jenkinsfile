@@ -12,13 +12,13 @@ pipeline {
             }
         }
 
-       stage('Build & Deploy') {
+    stage('Build & Deploy') {
     steps {
         script {
-            // Clean up any previously running containers (ignore errors)
-            sh 'docker rm -f flask_app || true'
+            // Clean up any existing containers, volumes, and networks from previous runs
+            sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down || true'
 
-            // Build and run with Docker Compose
+            // Build and start containers
             sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} up --build -d'
         }
     }
