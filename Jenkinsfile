@@ -2,40 +2,47 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_FILE = './docker-compose.yml'
+        // Ensure that these environment variables are defined
+        DOCKER_COMPOSE_PATH = "./docker-compose.yml"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
-                git url: 'https://github.com/VSN08/firstgithubproj.git', branch: 'main'
+                checkout scm
             }
         }
-
+        
         stage('Build & Deploy') {
             steps {
                 script {
-                    // Clean up any previously running containers
+                    // Stop and remove containers if they exist
                     sh 'docker rm -f flask_app nginx_proxy || true'
-
-                    // Tear down previous network if any
-                    sh 'docker-compose -f $COMPOSE_FILE down || true'
-
-                    // Build without cache to ensure changes are applied
-                    sh 'docker-compose -f $COMPOSE_FILE build --no-cache'
-
-                    // Start up the containers
-                    sh 'docker-compose -f $COMPOSE_FILE up -d'
+                    sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down || true'
+                    sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} build --no-cache'
+                    sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} up -d'
                 }
             }
         }
-
+        
         stage('Test') {
             steps {
                 script {
                     echo 'Running tests...'
-                    sh 'sleep 5'  // Wait a bit for containers to be ready
-                    sh 'curl -f http://localhost | grep "Hello from DevOps"'
+
+                    // Sleep to give the containers time to fully start
+                    sh 'sleep 10'
+
+                    // Test that the app is correctly serving the expected response
+                    def output = sh(script: 'curl -s http://localhost', returnStdout: true).trim()
+
+                    // Output the result for logging
+                    echo "Received response: ${output}"
+
+                    // Check if the output contains "Hello from DevOps"
+                    if (!output.contains('Hello from DevOps')) {
+                        error("Expected response not found! Got: ${output}")
+                    }
                 }
             }
         }
@@ -43,17 +50,12 @@ pipeline {
         stage('Clean up') {
             steps {
                 script {
-                    sh 'docker-compose -f $COMPOSE_FILE down'
+                    echo 'Cleaning up resources...'
+                    sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down || true'
                 }
             }
         }
     }
-
-    post {
-        always {
-            echo 'Cleaning up resources...'
-            sh 'docker-compose -f $COMPOSE_FILE down || true'
-        }
-    }
 }
+
 
