@@ -2,39 +2,40 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE_PATH = './docker-compose.yml'
+        COMPOSE_FILE = './docker-compose.yml'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/VSN08/firstgithubproj.git'
+                git url: 'https://github.com/VSN08/firstgithubproj.git', branch: 'main'
             }
         }
 
-   stage('Build & Deploy') {
-    steps {
-        script {
-            // Stop and remove known conflicting containers (ignore errors if they don't exist)
-            sh 'docker rm -f flask_app nginx_proxy || true'
+        stage('Build & Deploy') {
+            steps {
+                script {
+                    // Clean up any previously running containers
+                    sh 'docker rm -f flask_app nginx_proxy || true'
 
-            // Clean up Docker Compose environment
-            sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down || true'
+                    // Tear down previous network if any
+                    sh 'docker-compose -f $COMPOSE_FILE down || true'
 
-            // Build and start the new containers
-            sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} up --build -d'
+                    // Build without cache to ensure changes are applied
+                    sh 'docker-compose -f $COMPOSE_FILE build --no-cache'
+
+                    // Start up the containers
+                    sh 'docker-compose -f $COMPOSE_FILE up -d'
+                }
+            }
         }
-    }
-}
-
-
-
 
         stage('Test') {
             steps {
                 script {
-                    echo "Running tests..."
-                    // Add test steps here if needed
+                    echo 'Running tests...'
+                    sh 'sleep 5'  // Wait a bit for containers to be ready
+                    sh 'curl -f http://localhost | grep "Hello from DevOps"'
                 }
             }
         }
@@ -42,7 +43,7 @@ pipeline {
         stage('Clean up') {
             steps {
                 script {
-                    sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down'
+                    sh 'docker-compose -f $COMPOSE_FILE down'
                 }
             }
         }
@@ -51,7 +52,8 @@ pipeline {
     post {
         always {
             echo 'Cleaning up resources...'
-            sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down'
+            sh 'docker-compose -f $COMPOSE_FILE down || true'
         }
     }
 }
+
