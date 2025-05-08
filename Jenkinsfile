@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // Ensure that these environment variables are defined
         DOCKER_COMPOSE_PATH = "./docker-compose.yml"
+        TEST_URL = "http://nginx_proxy" // use Docker service name instead of localhost
     }
 
     stages {
@@ -12,36 +12,34 @@ pipeline {
                 checkout scm
             }
         }
-        
+
         stage('Build & Deploy') {
             steps {
                 script {
-                    // Stop and remove containers if they exist
+                    echo 'Stopping old containers if any...'
                     sh 'docker rm -f flask_app nginx_proxy || true'
                     sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down || true'
+
+                    echo 'Building Docker images...'
                     sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} build --no-cache'
+
+                    echo 'Starting containers...'
                     sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} up -d'
                 }
             }
         }
-        
+
         stage('Test') {
             steps {
                 script {
                     echo 'Running tests...'
-
-                    // Sleep to give the containers time to fully start
                     sh 'sleep 10'
 
-                    // Test that the app is correctly serving the expected response
-                    def output = sh(script: 'curl -s http://localhost', returnStdout: true).trim()
+                    def response = sh(script: "curl -s ${TEST_URL}", returnStdout: true).trim()
+                    echo "Received response: ${response}"
 
-                    // Output the result for logging
-                    echo "Received response: ${output}"
-
-                    // Check if the output contains "Hello from DevOps"
-                    if (!output.contains('Hello from devops!')) {
-                        error("Expected response not found! Got: ${output}")
+                    if (!response.contains("Hello from devops!")) {
+                        error("Expected response not found! Got: ${response}")
                     }
                 }
             }
@@ -50,12 +48,10 @@ pipeline {
         stage('Clean up') {
             steps {
                 script {
-                    echo 'Cleaning up resources...'
+                    echo 'Cleaning up...'
                     sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down || true'
                 }
             }
         }
     }
 }
-
-
