@@ -12,17 +12,21 @@ pipeline {
             }
         }
 
-    stage('Build & Deploy') {
+   stage('Build & Deploy') {
     steps {
         script {
-            // Clean up any existing containers, volumes, and networks from previous runs
+            // Stop and remove known conflicting containers (ignore errors if they don't exist)
+            sh 'docker rm -f flask_app nginx_proxy || true'
+
+            // Clean up Docker Compose environment
             sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down || true'
 
-            // Build and start containers
+            // Build and start the new containers
             sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} up --build -d'
         }
     }
 }
+
 
 
 
