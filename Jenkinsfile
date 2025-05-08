@@ -2,23 +2,20 @@ pipeline {
     agent any
 
     environment {
-        // This is the path to your docker-compose file in the repository
         DOCKER_COMPOSE_PATH = './docker-compose.yml'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the repository from Git
-                git url : 'https://github.com/VSN08/firstgithubproj.git' ,  git branch: 'main' // Replace with your repo URL
+                git branch: 'main', url: 'https://github.com/VSN08/firstgithubproj.git'
             }
         }
 
         stage('Build & Deploy') {
             steps {
                 script {
-                    // Use Docker Compose to build and deploy the app
-                    sh "docker-compose -f ${DOCKER_COMPOSE_PATH} up --build -d"
+                    sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} up --build -d'
                 }
             }
         }
@@ -26,9 +23,8 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    // Add any tests you want to run here
-                    echo "Testing the app..."
-                    // For example, you can run curl requests or any other test here
+                    echo "Running tests..."
+                    // Add test steps here if needed
                 }
             }
         }
@@ -36,8 +32,7 @@ pipeline {
         stage('Clean up') {
             steps {
                 script {
-                    // Optionally, you can stop and remove containers after the build
-                    sh "docker-compose -f ${DOCKER_COMPOSE_PATH} down"
+                    sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down'
                 }
             }
         }
@@ -45,9 +40,8 @@ pipeline {
 
     post {
         always {
-            // Clean up even if the pipeline fails
             echo 'Cleaning up resources...'
-            sh "docker-compose -f ${DOCKER_COMPOSE_PATH} down"
+            sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down'
         }
     }
 }
