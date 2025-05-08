@@ -40,7 +40,7 @@ pipeline {
                     echo "Received response: ${output}"
 
                     // Check if the output contains "Hello from DevOps"
-                    if (!output.contains('Hello from DevOps')) {
+                    if (!output.contains('Hello from devops!')) {
                         error("Expected response not found! Got: ${output}")
                     }
                 }
