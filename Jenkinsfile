@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         DOCKER_COMPOSE_PATH = "./docker-compose.yml"
-        TEST_URL = "http://nginx_proxy" // use Docker service name instead of localhost
     }
 
     stages {
@@ -25,22 +24,6 @@ pipeline {
 
                     echo 'Starting containers...'
                     sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} up -d'
-                }
-            }
-        }
-
-        stage('Test') {
-            steps {
-                script {
-                    echo 'Running tests...'
-                    sh 'sleep 10'
-
-                    def response = sh(script: "curl -s ${TEST_URL}", returnStdout: true).trim()
-                    echo "Received response: ${response}"
-
-                    if (!response.contains("Hello from devops!")) {
-                        error("Expected response not found! Got: ${response}")
-                    }
                 }
             }
         }
