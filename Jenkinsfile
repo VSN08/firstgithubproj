@@ -27,14 +27,5 @@ pipeline {
                 }
             }
         }
-
-        stage('Clean up') {
-            steps {
-                script {
-                    echo 'Cleaning up...'
-                    sh 'docker-compose -f ${DOCKER_COMPOSE_PATH} down || true'
-                }
-            }
-        }
     }
 }
